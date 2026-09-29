@@ -23,27 +23,34 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
           class ViewModel {
             constructor() {
               self = this;
+              self.limit = ko.observable(100);
+              self.offset = ko.observable(0);
+              self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
 
               $.mockjax({
-                url: '/api/data/photos',
+                url: /^\/api\/data\/photos\?_start=[0-9]+&_limit=[0-9]+$/,
                 type: 'GET',
                 response: function (settings, done) {
                   var mockSelf = this;
 
                   return (async function () {
-                    let response = await fetch('https://jsonplaceholder.typicode.com/photos?_start=0&_limit=100');
+                    let response = await fetch('https://jsonplaceholder.typicode.com/photos?_start=' + self.offset() + '&_limit=' + self.limit());
                     let json = await response.json();
-                    mockSelf.responseText = json;
+                    let resp = {};
+                    resp.hasMore = true;
+                    resp.limit = 10;
+                    resp.data = [...json]
+                    mockSelf.responseText = resp;
                     done();
                   })()
                 }
               });
 
               self.parsePhoto = (response) => {
-                return { ...response,"color":response.thumbnailUrl.substring(response.thumbnailUrl.lastIndexOf("/")+1) };
+                return { ...response, "color": response.thumbnailUrl.substring(response.thumbnailUrl.lastIndexOf("/") + 1) };
               };
 
-              self.serviceURL = '/api/data/photos';
+
 
               self.photoModel = ModelClass.Model.extend({
                 urlRoot: self.serviceURL,
@@ -58,24 +65,32 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               });
 
               self.collection = new self.photoCollection();
+              self.collection.customPagingOptions = (response) => {
+                return {
+                  totalResults: 5000,
+                  hasMore: true,
+                  fetchSize: 100
+                }
+              }
+
+              self.collection.customURL = (oprtn, collctn, optns) => {
+                if (oprtn == 'read') {
+                  console.log("Operation read");
+                  console.log("OPTIONS ARE ", optns)
+                  if (optns.startIndex)
+                    self.offset(optns.startIndex);
+                  self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
+                  return { 'url': self.serviceURL, 'type': 'GET' };
+                }
+                return null;
+              }
 
               self.pdp = new PagingDataProviderView(new CollectionDataProvider(self.collection));
 
               self.columns = [{ "field": "title", "headerText": "Title", "sortable": "disabled" },
-              {"field":"color","template":"photoImg", "headerText": "Image", "sortable": "disabled"},
+              { "field": "color", "template": "photoImg", "headerText": "Image", "sortable": "disabled" },
               { "template": "deleteRow", "headerText": "Delete", "sortable": "disabled" }];
             }
-          }
-
-          ViewModel.prototype.getData = (event) => {
-            $.ajax({
-              url: '/api/data/photos',
-              type: 'GET',
-              success: (response) => {
-                console.log("RESPONSE");
-                console.log(response);
-              }
-            });
           }
 
           ViewModel.prototype.deleteRow = (row) => {
@@ -89,8 +104,8 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               "almbumId": 1,
               "id": new Date().getTime(),
               "title": "New Photo",
-              "thumbnailUrl":"https://via.placeholder.com/150/92c952",
-              "color":"92c952"
+              "thumbnailUrl": "https://via.placeholder.com/150/92c952",
+              "color": "92c952"
             });
 
             let startItemIndex = $(".oj-table")[0].data.getStartItemIndex();
