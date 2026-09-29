@@ -28,7 +28,7 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
 
               $.mockjax({
-                url: /^\/api\/data\/photos\?_start=[0-9]+&_limit=[0-9]+$/,
+                url: /^\/api\/data\/photos\?_start=[0-9]+&_limit=[0-9]+(?:&limit=[0-9]+&offset=[0-9]+&totalResults=true)?$/,
                 type: 'GET',
                 response: function (settings, done) {
                   var mockSelf = this;
@@ -65,27 +65,35 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               });
 
               self.collection = new self.photoCollection();
-              self.collection.customPagingOptions = (response) => {
-                return {
-                  totalResults: 5000,
-                  hasMore: true,
-                  fetchSize: 100
-                }
-              }
 
-              self.collection.customURL = (oprtn, collctn, optns) => {
-                if (oprtn == 'read') {
-                  console.log("Operation read");
-                  console.log("OPTIONS ARE ", optns)
-                  if (optns.startIndex)
-                    self.offset(optns.startIndex);
-                  self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
-                  return { 'url': self.serviceURL, 'type': 'GET' };
-                }
-                return null;
-              }
+              // self.collection.customPagingOptions = (response) => {
+              //   return {
+              //     totalResults: 5000,
+              //     hasMore: true,
+              //     fetchSize: 100
+              //   }
+              // }
+
+              // self.collection.customURL = (oprtn, collctn, optns) => {
+              //   if (oprtn == 'read') {
+              //     console.log("Operation read");
+              //     console.log("OPTIONS ARE ", optns)
+              //     if (optns.startIndex)
+              //       self.offset(optns.startIndex);
+              //     self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
+              //     return { 'url': self.serviceURL, 'type': 'GET' };
+              //   }
+              //   return null;
+              // }
 
               self.pdp = new PagingDataProviderView(new CollectionDataProvider(self.collection));
+              self.pdp.addEventListener("PAGE",(event)=>{
+                console.log("PAGE EVENT ",event);
+                if(event.detail.page==19){
+                  self.limit(self.limit()+(event.detail.page+1));
+                  $(".oj-table")[0].data.dataProvider.collection.fetch({startIndex:self.offset()});
+                }
+              })
 
               self.columns = [{ "field": "title", "headerText": "Title", "sortable": "disabled" },
               { "field": "color", "template": "photoImg", "headerText": "Image", "sortable": "disabled" },
