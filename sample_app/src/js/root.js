@@ -66,6 +66,11 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
 
               self.collection = new self.photoCollection();
 
+              //Commenting below will make the Collection Non-Virtual
+              //Non-Virtual means the numbers of rows are alreayd knows
+              //CRUD Operations are all possible in non-virtual collections only
+              //In Virtual collections Create, Update and Delete are not easily supported
+
               // self.collection.customPagingOptions = (response) => {
               //   return {
               //     totalResults: 5000,
@@ -74,25 +79,22 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               //   }
               // }
 
-              // self.collection.customURL = (oprtn, collctn, optns) => {
-              //   if (oprtn == 'read') {
-              //     console.log("Operation read");
-              //     console.log("OPTIONS ARE ", optns)
-              //     if (optns.startIndex)
-              //       self.offset(optns.startIndex);
-              //     self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
-              //     return { 'url': self.serviceURL, 'type': 'GET' };
-              //   }
-              //   return null;
-              // }
+              self.collection.customURL = (oprtn, collctn, optns) => {
+                if (oprtn == 'read') {
+                  console.log("Operation read");
+                  console.log("OPTIONS ARE ", optns)
+                  if (optns.startIndex)
+                    self.offset(optns.startIndex);
+                  self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
+                  return { 'url': self.serviceURL, 'type': 'GET' };
+                }
+                return null;
+              }
 
               self.pdp = new PagingDataProviderView(new CollectionDataProvider(self.collection));
               self.pdp.addEventListener("PAGE",(event)=>{
                 console.log("PAGE EVENT ",event);
-                if(event.detail.page==19){
-                  self.limit(self.limit()+(event.detail.page+1));
-                  $(".oj-table")[0].data.dataProvider.collection.fetch({startIndex:self.offset()});
-                }
+                
               })
 
               self.columns = [{ "field": "title", "headerText": "Title", "sortable": "disabled" },
