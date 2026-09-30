@@ -23,7 +23,7 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
           class ViewModel {
             constructor() {
               self = this;
-              self.limit = ko.observable(100);
+              self.limit = ko.observable(50);
               self.offset = ko.observable(0);
               self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
 
@@ -38,16 +38,19 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
                     let json = await response.json();
                     let resp = {};
                     resp.hasMore = true;
-                    resp.limit = 10;
+                    resp.limit = self.limit();
                     resp.data = [...json]
                     mockSelf.responseText = resp;
+                    resp.hasMore = true;
+                    // Adding the below property makes the collection virtual
+                    // resp.totalResults=5000;
                     done();
                   })()
                 }
               });
 
               self.parsePhoto = (response) => {
-                return { ...response, "color": response.thumbnailUrl.substring(response.thumbnailUrl.lastIndexOf("/") + 1) };
+                return { ...response, "color": (Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0') };
               };
 
 
@@ -92,9 +95,28 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               }
 
               self.pdp = new PagingDataProviderView(new CollectionDataProvider(self.collection));
-              self.pdp.addEventListener("PAGE",(event)=>{
-                console.log("PAGE EVENT ",event);
-                
+              self.pdp.addEventListener("PAGE", (event) => {
+                console.log("PAGE EVENT ", event);
+                if (event.detail.page == (self.pdp.getPageCount() - 1)) {
+                  self.offset(self.offset() + self.limit());
+                  console.log("OFFSET IS ", self.offset());
+                  self.serviceURL = '/api/data/photos?_start=' + self.offset() + '&_limit=' + self.limit();
+                  //$(".oj-table")[0].data.dataProvider.collection.fetch({add:true});
+
+                  $.ajax({
+                    url: self.serviceURL,
+                    type: 'GET'
+                  }).done((resp) => {
+                    resp.data.forEach((row,index) => {
+                      let newModel = new ModelClass.Model({
+                        ...row,
+                        "color": (Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
+                      });
+
+                      $(".oj-table")[0].data.dataProvider.collection.add(newModel, { at: self.offset()+index });
+                    });
+                  });
+                }
               })
 
               self.columns = [{ "field": "title", "headerText": "Title", "sortable": "disabled" },
@@ -115,7 +137,7 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               "id": new Date().getTime(),
               "title": "New Photo",
               "thumbnailUrl": "https://via.placeholder.com/150/92c952",
-              "color": "92c952"
+              "color": (Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
             });
 
             let startItemIndex = $(".oj-table")[0].data.getStartItemIndex();
