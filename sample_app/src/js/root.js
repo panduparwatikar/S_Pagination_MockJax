@@ -131,7 +131,6 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
           }
 
           ViewModel.prototype.addRow = () => {
-            let modelLength = $(".oj-table")[0].data.dataProvider.collection.models.length;
             let newModel = new ModelClass.Model({
               "almbumId": 1,
               "id": new Date().getTime(),
