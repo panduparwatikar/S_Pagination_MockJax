@@ -135,7 +135,7 @@ require(['ojs/ojbootstrap', 'ojs/ojcontext', 'knockout', 'ojs/ojmodel', 'ojs/ojp
               "almbumId": 1,
               "id": new Date().getTime(),
               "title": "New Photo",
-              "thumbnailUrl": "https://via.placeholder.com/150/92c952",
+              "thumbnailUrl": "",
               "color": (Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
             });
 
